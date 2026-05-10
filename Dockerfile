@@ -10,17 +10,14 @@ COPY scripts/postinstall.mjs ./scripts/postinstall.mjs
 COPY scripts/postinstallSupport.mjs ./scripts/postinstallSupport.mjs
 COPY scripts/native-binary-compat.mjs ./scripts/native-binary-compat.mjs
 ENV NPM_CONFIG_LEGACY_PEER_DEPS=true
-# Delete the `prepare` script (husky) from package.json before npm install.
-# Husky sets up git hooks but crashes in Docker (no .git repo, exit code 127).
-# Using node -e instead of `npm pkg` for maximum reliability in build envs.
-# --include=dev forces devDependencies to be installed even when Zeabur/CI sets
-# NODE_ENV=production in the build environment (which would skip devDeps by default).
-RUN node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json','utf8')); delete p.scripts.prepare; fs.writeFileSync('package.json',JSON.stringify(p,null,2))" \
-    && if [ -f package-lock.json ]; then \
-        npm ci --include=dev --no-audit --no-fund --legacy-peer-deps; \
-       else \
-        npm install --include=dev --no-audit --no-fund --legacy-peer-deps; \
-       fi
+ENV NODE_ENV=development
+ENV HUSKY=0
+
+RUN if [ -f package-lock.json ]; then \
+        npm ci --no-audit --no-fund --legacy-peer-deps; \
+    else \
+        npm install --no-audit --no-fund --legacy-peer-deps; \
+    fi
 
 COPY . ./
 RUN mkdir -p /app/data && npm run build -- --webpack
