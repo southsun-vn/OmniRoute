@@ -10,14 +10,16 @@ COPY scripts/postinstall.mjs ./scripts/postinstall.mjs
 COPY scripts/postinstallSupport.mjs ./scripts/postinstallSupport.mjs
 COPY scripts/native-binary-compat.mjs ./scripts/native-binary-compat.mjs
 ENV NPM_CONFIG_LEGACY_PEER_DEPS=true
-# Remove `prepare` script (husky) before npm install — husky tries to install
-# git hooks but fails in Docker with no git repo (exit code 127).
-RUN npm pkg delete scripts.prepare
-RUN if [ -f package-lock.json ]; then \
-    npm ci --no-audit --no-fund --legacy-peer-deps; \
-    else \
-    npm install --no-audit --no-fund --legacy-peer-deps; \
-    fi
+# Delete the `prepare` script (husky) from package.json before npm install.
+# Husky sets up git hooks but crashes in Docker (no .git repo, exit code 127).
+# Using node -e instead of `npm pkg` for maximum reliability in build envs.
+# Combined into ONE RUN to guarantee sequential execution & bust layer cache.
+RUN node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json','utf8')); delete p.scripts.prepare; fs.writeFileSync('package.json',JSON.stringify(p,null,2))" \
+    && if [ -f package-lock.json ]; then \
+        npm ci --no-audit --no-fund --legacy-peer-deps; \
+       else \
+        npm install --no-audit --no-fund --legacy-peer-deps; \
+       fi
 
 COPY . ./
 RUN mkdir -p /app/data && npm run build -- --webpack
