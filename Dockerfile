@@ -10,9 +10,9 @@ COPY scripts/postinstall.mjs ./scripts/postinstall.mjs
 COPY scripts/postinstallSupport.mjs ./scripts/postinstallSupport.mjs
 COPY scripts/native-binary-compat.mjs ./scripts/native-binary-compat.mjs
 ENV NPM_CONFIG_LEGACY_PEER_DEPS=true
-# Skip husky git hooks setup in Docker/CI — husky runs during `prepare` lifecycle
-# but fails without a git repo. HUSKY=0 is the official skip mechanism.
-ENV HUSKY=0
+# Remove `prepare` script (husky) before npm install — husky tries to install
+# git hooks but fails in Docker with no git repo (exit code 127).
+RUN npm pkg delete scripts.prepare
 RUN if [ -f package-lock.json ]; then \
     npm ci --no-audit --no-fund --legacy-peer-deps; \
     else \
