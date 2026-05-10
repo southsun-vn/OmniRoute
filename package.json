@@ -107,7 +107,7 @@
     "postinstall": "node scripts/postinstall.mjs",
     "uninstall": "node scripts/uninstall.mjs",
     "uninstall:full": "node scripts/uninstall.mjs --full",
-    "prepare": "husky",
+    "prepare": "node -e \"if(process.env.DOCKER_BUILD||process.env.CI||!require('fs').existsSync('.git')){process.exit(0)}\" || husky",
     "system-info": "node scripts/system-info.mjs"
   },
   "dependencies": {
