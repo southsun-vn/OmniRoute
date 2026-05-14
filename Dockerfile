@@ -85,3 +85,8 @@ RUN apt-get update \
 
 # Install CLI tools globally. Separate layer from apt for better cache reuse.
 RUN npm install -g --no-audit --no-fund @openai/codex @anthropic-ai/claude-code droid openclaw@latest
+
+# FORCE runner-base as the final default stage for platforms that don't support
+# explicit target selection (like some Zeabur git-url deployments).
+FROM runner-base
+
